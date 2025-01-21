@@ -1,0 +1,13 @@
+/**:
+  ros__parameters:
+    tag_size: 0.066
+    tag_family: 'tag25h9'
+    get_debug_image: true
+    expected_tags: 
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6

@@ -10,10 +10,27 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', ['config/webCam.yaml', 'config/lenovoCam.yaml']),
+        # Config files
+        ('share/' + package_name + '/config/extrinsic_calib/intrinsics', [
+            'config/extrinsic_calib/intrinsics/lenovoCam_intrinsics.yaml',
+            'config/extrinsic_calib/intrinsics/webCam_intrinsics.yaml'
+        ]),
+        ('share/' + package_name + '/config/tag_detect', [
+            'config/tag_detect/common_config.yaml',
+            'config/tag_detect/camera1_config.yaml'
+        ]),
+        ('share/' + package_name + '/config/extrinsic_calib', [
+            'config/extrinsic_calib/webCam.yaml',
+            'config/extrinsic_calib/lenovoCam.yaml'
+        ]),
+        # RViz configuration
         ('share/' + package_name + '/rviz', ['rviz/extrinsic.rviz']),
-        ('share/' + package_name + '/launch', ['launch/start_localization.launch.py', 'launch/launch_rviz.launch.py', 'launch/launch_usb_cameras.launch.py']),
-
+        # Launch files
+        ('share/' + package_name + '/launch', [
+            'launch/start_localization.launch.py',
+            'launch/launch_rviz.launch.py',
+            'launch/launch_usb_cameras.launch.py'
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,6 +43,7 @@ setup(
         'console_scripts': [
             'tag_detect = apriltag_localize.tag_detect:main',
             'multi_detect_agg = apriltag_localize.multi_detect_agg:main',
+            'calib_check = apriltag_localize.calib_check:main',
         ],
     },
 )

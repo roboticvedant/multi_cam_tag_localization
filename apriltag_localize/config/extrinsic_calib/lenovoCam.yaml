@@ -1,15 +1,15 @@
 /**:
     ros__parameters:
-      video_device: "/dev/video0" # "ffplay /dev/video4" to test
+      video_device: "/dev/video2" # "ffplay /dev/video12" to test
       framerate: 30.0
       io_method: "mmap"
-      frame_id: "cam1_frame"
+      frame_id: "cam2_frame"
       pixel_format: "yuyv"  # see usb_cam/supported_formats for list of supported formats
       av_device_format: "YUV422P"
       image_width: 640
       image_height: 480
-      camera_name: "cam1"
-      camera_info_url: "package://extrinsic_calibrator_examples/config/webCam_intrinsics.yaml"
+      camera_name: "cam2"
+      camera_info_url: "package://apriltag_localize/config/extrinsic_calib/intrinsics/lenovoCam_intrinsics.yaml"
       brightness: -1
       contrast: -1
       saturation: -1

@@ -10,12 +10,14 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
+
+    # Get the package share directory for config files
+    apriltag_localize_share = get_package_share_directory('apriltag_localize')
+
+    # Define paths to the configuration files
+    tag_detect_common_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'common_config.yaml')
+    tag_detect_camera1_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'camera1_config.yaml')
     
-    apriltag_params_file = os.path.join(
-        get_package_share_directory('apriltag_ros'),
-        'cfg',
-        'tags_36h11.yaml'
-    )
     return LaunchDescription([
 
         # source the ros2 ws that contains the extrinsic_calibrator_core package
@@ -44,23 +46,13 @@ def generate_launch_description():
             output='screen',
         ), 
 
-        Node(
-            package='apriltag_ros',
-            executable='apriltag_node',
-            name='apriltag_node',
-            remappings=[
-                ('image_rect', '/camera_1/image'),
-                ('camera_info', '/camera/camera_info')
-            ],
-            parameters=[apriltag_params_file]
-        ),
-
         # My custom nodes from here on:
         Node(
             package='apriltag_localize',
             executable='tag_detect',
             name='detect_node_cam1',
             output='screen',
+            parameters=[tag_detect_common_config, tag_detect_camera1_config]
         ), 
 
          Node(

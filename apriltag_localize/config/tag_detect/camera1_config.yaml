@@ -1,0 +1,4 @@
+/**:
+  ros__parameters:
+    camera_name: 'camera_1'
+    tf2_frame: 'cam1'

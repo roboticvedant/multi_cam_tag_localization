@@ -31,7 +31,7 @@ class AprilTagDetectorNode(Node):
         self.declare_parameter('tag_family', 'tag25h9')
         self.declare_parameter('get_debug_image', True)
         self.declare_parameter('tf2_frame', 'cam1')
-        self.declare_parameter('expected_tags', [9, 10, 21])
+        self.declare_parameter('expected_tags', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
 
         # Get parameters
         self.camera_name = self.get_parameter('camera_name').value
