@@ -12,6 +12,7 @@ class CalibCheckNode(Node):
         super().__init__('calib_check')
         self.declare_parameter('frame_1', 'tag_0')
         self.declare_parameter('frame_2', 'tag_1')
+        self.ref_dist = 149
 
         self.frame_1 = self.get_parameter('frame_1').get_parameter_value().string_value
         self.frame_2 = self.get_parameter('frame_2').get_parameter_value().string_value
@@ -29,9 +30,8 @@ class CalibCheckNode(Node):
         # Setup the live plot
         self.fig, self.ax = plt.subplots()
         self.line, = self.ax.plot([], [], label=f"Distance: {self.frame_1} -> {self.frame_2}")
-        self.ax.axhline(83, color='r', linestyle='--', label="83 mm Reference Line")  # Dotted reference line
-        self.ax.set_xlim(0, 100)  # Adjust this if necessary
-        self.ax.set_ylim(0, 200)  # Adjust this based on expected distances in mm
+        self.ax.axhline(0 , color='r', linestyle='--', label=" 0 error")  # Dotted reference line
+        self.ax.set_ylim(-2, 10)  # Adjust this based on expected distances in mm
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("Distance (mm)")
         self.ax.legend()
@@ -47,10 +47,10 @@ class CalibCheckNode(Node):
             # Get the transform between the two frames
             transform = self.tf_buffer.lookup_transform(self.frame_1, self.frame_2, rclpy.time.Time())
             distance = self.compute_distance(transform.transform.translation) * 1000  # Convert to mm
-
+            error = abs(distance-self.ref_dist )
             # Store distance and timestamp
             timestamp = self.get_clock().now().to_msg().sec - self.start_time
-            self.distances.append(distance)
+            self.distances.append(error)
             self.timestamps.append(timestamp)
 
             self.get_logger().info(f"Distance between {self.frame_1} and {self.frame_2}: {distance:.2f} mm")
@@ -62,7 +62,7 @@ class CalibCheckNode(Node):
         self.line.set_data(self.timestamps, self.distances)
         if self.timestamps:
             self.ax.set_xlim(max(0, self.timestamps[0] - 1), self.timestamps[-1] + 1)
-        self.ax.set_ylim(0, max(max(self.distances, default=1) + 10, 100))  # Adjusted for better visibility
+        self.ax.set_ylim(-5, max(max(self.distances, default=1) + 10, 100))  # Adjusted for better visibility
         self.ax.figure.canvas.draw()
 
     @staticmethod
