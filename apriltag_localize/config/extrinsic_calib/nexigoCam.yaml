@@ -1,0 +1,22 @@
+/**:
+    ros__parameters:
+      video_device: "/dev/video2" # "ffplay /dev/video12" to test
+      framerate: 60.0
+      io_method: "mmap"
+      frame_id: "cam1_frame"
+      pixel_format: "mjpeg2rgb"  # see usb_cam/supported_formats for list of supported formats
+      image_width: 1920
+      image_height: 1080
+      camera_name: "cam1"
+      camera_info_url: "package://apriltag_localize/config/extrinsic_calib/intrinsics/nexigoCam_intrinsics.yaml"
+      brightness: -1
+      contrast: -1
+      saturation: -1
+      sharpness: -1
+      gain: 0
+      auto_white_balance: true
+      white_balance: 4000
+      autoexposure: true
+      exposure: 100
+      autofocus: false
+      focus: -1

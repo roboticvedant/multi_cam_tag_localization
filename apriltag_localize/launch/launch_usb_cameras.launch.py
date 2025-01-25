@@ -55,21 +55,22 @@ def generate_launch_description():
 
     webCam_config = os.path.join(config_dir, 'webCam.yaml')
     lenovoCam_config = os.path.join(config_dir, 'lenovoCam.yaml')
+    nexigo_config = os.path.join(config_dir, 'nexigoCam.yaml')
 
     return LaunchDescription([
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='web_camera',
-        #     namespace='camera_1',
-        #     parameters=[webCam_config],
-        #     output='screen'
-        # ),
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='nexigo_camera',
+            namespace='camera_1',
+            parameters=[nexigo_config],
+            output='screen'
+        ),
         Node(
             package='usb_cam',
             executable='usb_cam_node_exe',
             name='lenovo_camera',
-            namespace='camera_1',
+            namespace='camera_2',
             parameters=[lenovoCam_config],
             output='screen'
         )

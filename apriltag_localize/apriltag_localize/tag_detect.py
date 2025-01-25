@@ -44,7 +44,7 @@ class AprilTagDetectorNode(Node):
         # Initialize detector
         self._detector = Detector(
             families=self.tag_family,
-            nthreads=10,
+            nthreads=1,
             quad_decimate=1.0,
             quad_sigma=0.0,
             refine_edges=1,
