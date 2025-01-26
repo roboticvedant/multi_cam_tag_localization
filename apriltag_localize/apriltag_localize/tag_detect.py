@@ -94,8 +94,8 @@ class AprilTagDetectorNode(Node):
     def _create_pose_stamped(self, position, orientation):
         """Create a PoseStamped message with explicit type conversion"""
         pose_stamped = PoseStamped()
-        pose_stamped.header.stamp = self.get_clock().now().to_msg()
-        pose_stamped.header.frame_id = self.tf2_frame
+        # pose_stamped.header.stamp = self.get_clock().now().to_msg()
+        # pose_stamped.header.frame_id = self.tf2_frame
         
         # Ensure position values are float
         pose_stamped.pose.position.x = float(position[0])
@@ -164,6 +164,8 @@ class AprilTagDetectorNode(Node):
             tag_position.family = self.tag_family
             tag_position.id = int(detection.tag_id)
             tag_position.pose = transformed_pose
+            tag_position.decision_margin = detection.decision_margin
+            tag_position.pose_error = detection.pose_err
 
             return tag_position
             
@@ -191,6 +193,7 @@ class AprilTagDetectorNode(Node):
             return
 
         try:
+            detectiontime = msg.header.stamp
             # Convert ROS Image message to OpenCV image
             cv_image = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
@@ -211,12 +214,15 @@ class AprilTagDetectorNode(Node):
             # Create TagArray message
             tag_array_msg = TagArray()
             tag_array_msg.header = Header()
-            tag_array_msg.header.stamp = self.get_clock().now().to_msg()
+            tag_array_msg.header.stamp = detectiontime
             tag_array_msg.header.frame_id = 'map'
+            if tag_array_msg is None:
+                self.get_logger().error('Failed to create TagArray message')
+                return
 
             # Create debug image if enabled
             debug_image = cv_image.copy() if self.get_debug_image else None
-
+            
             for detection in detections:
                 # Verify detection has pose data
                 if not hasattr(detection, 'pose_t') or not hasattr(detection, 'pose_R'):
@@ -227,7 +233,9 @@ class AprilTagDetectorNode(Node):
                     continue
 
                 tag_position = self._process_tag_detection(detection)
+
                 if tag_position is not None:
+                    tag_position.header = tag_array_msg.header
                     tag_array_msg.positions.append(tag_position)
 
                 # Draw detection on debug image
