@@ -185,6 +185,8 @@ class AprilTagDetectorNode(Node):
             return tf2_geometry_msgs.do_transform_pose(pose_stamped.pose, transform)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             self.get_logger().error(f'Failed to transform pose: {str(e)}')
+            self.get_logger().info(f'Available frames: {self.tf_buffer.all_frames_as_string()}')
+
             return None
 
     def _image_callback(self, msg):
