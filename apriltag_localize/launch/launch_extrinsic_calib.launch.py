@@ -22,6 +22,16 @@ def generate_launch_description():
     
     return LaunchDescription([
 
+        # source the ros2 ws that contains the extrinsic_calibrator_core package
+
+        # Laucnh the set of usb-cameras with their own config_files
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(PathJoinSubstitution([
+                FindPackageShare("apriltag_localize"),
+                "launch",
+                "launch_usb_cameras.launch.py"]))
+        ),
+        
         # Laucnh the rviz visualizer with the TF of the map and the cameras
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(PathJoinSubstitution([
@@ -29,8 +39,7 @@ def generate_launch_description():
                 "launch",
                 "launch_rviz.launch.py"]))
         ),
-
-      
+        
         # Launch the extrinsic calibrator node. The config file is in the config folder and is passed to the node using the generate_parameter_library
         Node(
             package='extrinsic_calibrator_core',
@@ -39,29 +48,29 @@ def generate_launch_description():
             output='screen',
         ), 
 
-        # My custom nodes from here on:
-        Node(
-            package='apriltag_localize',
-            executable='tag_detect',
-            name='detect_node_cam1',
-            output='screen',
-            parameters=[tag_detect_common_config, tag_detect_camera1_config]
-        ), 
-        Node(
-            package='apriltag_localize',
-            executable='tag_detect',
-            name='detect_node_cam2',
-            output='screen',
-            parameters=[tag_detect_common_config, tag_detect_camera2_config]
-        ), 
+        # # My custom nodes from here on:
+        # Node(
+        #     package='apriltag_localize',
+        #     executable='tag_detect',
+        #     name='detect_node_cam1',
+        #     output='screen',
+        #     parameters=[tag_detect_common_config, tag_detect_camera1_config]
+        # ), 
+        # Node(
+        #     package='apriltag_localize',
+        #     executable='tag_detect',
+        #     name='detect_node_cam2',
+        #     output='screen',
+        #     parameters=[tag_detect_common_config, tag_detect_camera2_config]
+        # ), 
 
-         Node(
-            package='apriltag_localize',
-            executable='multi_detect_agg',
-            name='agg_node',
-            output='screen',
-            parameters=[{'cameras': ['camera_1', 'camera_2']}]
-        ), 
+        #  Node(
+        #     package='apriltag_localize',
+        #     executable='multi_detect_agg',
+        #     name='agg_node',
+        #     output='screen',
+        #     parameters=[{'cameras': ['camera_1', 'camera_2']}]
+        # ), 
         
         
        

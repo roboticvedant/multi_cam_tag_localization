@@ -30,10 +30,10 @@ setup(
         ('share/' + package_name + '/rviz', ['rviz/extrinsic.rviz']),
         # Launch files
         ('share/' + package_name + '/launch', [
-            'launch/start_localization.launch.py',
+            'launch/launch_extrinsic_calib.launch.py',
             'launch/launch_rviz.launch.py',
             'launch/launch_usb_cameras.launch.py',
-            'launch/localize_apriltag.launch.py',
+            'launch/launch_apriltag_localize.launch.py',
         ]),
     ],
     install_requires=['setuptools'],
