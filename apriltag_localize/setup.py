@@ -32,7 +32,8 @@ setup(
         ('share/' + package_name + '/launch', [
             'launch/start_localization.launch.py',
             'launch/launch_rviz.launch.py',
-            'launch/launch_usb_cameras.launch.py'
+            'launch/launch_usb_cameras.launch.py',
+            'launch/localize_apriltag.launch.py',
         ]),
     ],
     install_requires=['setuptools'],
