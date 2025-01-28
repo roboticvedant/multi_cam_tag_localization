@@ -73,5 +73,20 @@ def generate_launch_description():
             namespace='camera_2',
             parameters=[lenovoCam_config],
             output='screen'
-        )
+        ),
+        Node(
+            package='apriltag_localize',
+            executable='image_undistort',
+            name='undistort_node_cam1',
+            namespace='camera_1',
+            output='screen',
+        ),
+        Node(
+            package='apriltag_localize',
+            executable='image_undistort',
+            name='undistort_node_cam2',
+            namespace='camera_2',
+            output='screen',
+
+        ),
     ])

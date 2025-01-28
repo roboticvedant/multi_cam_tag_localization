@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
-    tag_size: 0.0499
-    tag_family: 'tagStandard52h13'
+    tag_size: 0.144
+    tag_family: 'tag25h9'
     get_debug_image: true
     expected_tags: 
       - 0

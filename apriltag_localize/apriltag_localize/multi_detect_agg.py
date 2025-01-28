@@ -84,7 +84,7 @@ class MultiDetectAggNode(Node):
         """Handle synchronized tag detections from all cameras"""
         try:
             # Dictionary to store all detections of each tag
-            # Structure: {tag_id: [(pose, weight, camera_name)]}
+            # Structure: {tag_id: [(pose, decision_margin, camera_name)]}
             tag_detections = defaultdict(list)
 
             # Process detections from each camera
@@ -93,8 +93,9 @@ class MultiDetectAggNode(Node):
 
                 for tag_pos in tag_array.positions:
                     tag_id = tag_pos.id
-                    # Store detection with default weight 1.0 and camera name
-                    tag_detections[tag_id].append((tag_pos.pose, 1.0, camera_name))
+                    tag_decision_margin = tag_pos.decision_margin
+                    # Store detection with pose, decision margin, and camera name
+                    tag_detections[tag_id].append((tag_pos.pose, tag_decision_margin, camera_name))
 
             # Process each detected tag
             for tag_id, detections in tag_detections.items():
@@ -109,16 +110,19 @@ class MultiDetectAggNode(Node):
                     self.publish_tag_transform(tag_id, pose, [camera_name])
                     continue
                 
-                # Multiple cameras detected the tag, average the poses
-                averaged_pose = self.average_poses([(pose, weight) for pose, weight, _ in detections])
+                # Multiple cameras detected the tag, compute weighted average using decision margins
+                poses_with_weights = []
+                total_margin = sum([dm for _, dm, _ in detections])
+
+                for pose, decision_margin, _ in detections:
+                    normalized_weight = decision_margin / total_margin  # Normalize decision margin
+                    poses_with_weights.append((pose, normalized_weight))
+
+                # Average poses using weights
+                averaged_pose = self.average_poses(poses_with_weights)
                 if averaged_pose is not None:
                     camera_names = [camera for _, _, camera in detections]
                     self.publish_tag_transform(tag_id, averaged_pose, camera_names)
-
-        except Exception as e:
-            self.get_logger().error(f'Error in sync callback: {str(e)}')
-            import traceback
-            self.get_logger().error(traceback.format_exc())
 
         except Exception as e:
             self.get_logger().error(f'Error in sync callback: {str(e)}')
