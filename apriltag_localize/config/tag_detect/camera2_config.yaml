@@ -2,3 +2,5 @@
   ros__parameters:
     camera_name: 'camera_2'
     tf2_frame: 'cam2'
+    tag_size: 0.0995
+

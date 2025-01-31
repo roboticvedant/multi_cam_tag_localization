@@ -49,6 +49,7 @@ setup(
             'multi_detect_agg = apriltag_localize.multi_detect_agg:main',
             'calib_check = apriltag_localize.calib_check:main',
             'image_undistort = apriltag_localize.image_undistort:main',
+            'robot_calibrate = apriltag_localize.robot_calibrate:main',
         ],
     },
 )

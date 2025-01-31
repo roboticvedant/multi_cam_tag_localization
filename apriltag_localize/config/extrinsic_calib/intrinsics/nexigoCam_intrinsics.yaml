@@ -4,14 +4,14 @@ camera_name: narrow_stereo
 camera_matrix:
   rows: 3
   cols: 3
-  data: [447.89892,   0.     , 340.1866 ,
-           0.     , 446.33485, 229.05296,
+  data: [438.36879,   0.     , 333.16711,
+           0.     , 439.96599, 233.06504,
            0.     ,   0.     ,   1.     ]
 distortion_model: plumb_bob
 distortion_coefficients:
   rows: 1
   cols: 5
-  data: [0.086709, -0.104361, -0.004063, 0.004440, 0.000000]
+  data: [0.071832, -0.073760, 0.000975, 0.001838, 0.000000]
 rectification_matrix:
   rows: 3
   cols: 3
@@ -21,6 +21,6 @@ rectification_matrix:
 projection_matrix:
   rows: 3
   cols: 4
-  data: [455.2261 ,   0.     , 343.73268,   0.     ,
-           0.     , 455.74973, 227.12068,   0.     ,
+  data: [445.88651,   0.     , 334.54823,   0.     ,
+           0.     , 448.41091, 233.51521,   0.     ,
            0.     ,   0.     ,   1.     ,   0.     ]
