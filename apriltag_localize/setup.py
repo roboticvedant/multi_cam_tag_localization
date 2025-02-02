@@ -11,6 +11,9 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         # Config files
+        ('share/' + package_name + '/config', [
+            'config/ekf.yaml',
+        ]),
         ('share/' + package_name + '/config/extrinsic_calib/intrinsics', [
             'config/extrinsic_calib/intrinsics/lenovoCam_intrinsics.yaml',
             'config/extrinsic_calib/intrinsics/webCam_intrinsics.yaml',
@@ -34,6 +37,7 @@ setup(
             'launch/launch_rviz.launch.py',
             'launch/launch_usb_cameras.launch.py',
             'launch/launch_apriltag_localize.launch.py',
+            'launch/launch_robot_pose.launch.py'
         ]),
     ],
     install_requires=['setuptools'],
@@ -50,6 +54,9 @@ setup(
             'calib_check = apriltag_localize.calib_check:main',
             'image_undistort = apriltag_localize.image_undistort:main',
             'robot_calibrate = apriltag_localize.robot_calibrate:main',
+            'robot_state_estimator = apriltag_localize.robot_state_estimator:main',
+            'initial_pose_setter = apriltag_localize.initial_pose_setter:main',
+            'map_to_odom_publisher = apriltag_localize.map_to_odom_publisher:main',
         ],
     },
 )

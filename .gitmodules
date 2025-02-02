@@ -1,3 +1,6 @@
 [submodule "extrinsic_calibrator"]
 	path = extrinsic_calibrator
 	url = git@github.com:roboticvedant/extrinsic_calibrator.git
+[submodule "robot_localization"]
+	path = robot_localization
+	url = https://github.com/cra-ros-pkg/robot_localization.git
