@@ -52,7 +52,7 @@ def generate_launch_description():
                 ('odometry/filtered', '/local_odom'),
                 ('/set_pose', '/local_ekf/set_pose'),
                 ('/diagnostics', '/local_ekf/diagnostics')
-            ]
+            ],
         ),
         
         # Initial Pose Setter

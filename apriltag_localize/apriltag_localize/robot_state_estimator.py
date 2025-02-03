@@ -10,6 +10,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 import yaml
 from collections import defaultdict
+from sensor_msgs.msg import Imu, MagneticField
 
 class RobotStateEstimator(Node):
     def __init__(self):
@@ -43,6 +44,13 @@ class RobotStateEstimator(Node):
             self.tf_callback,
             10
         )
+
+        self.subscription_imu = self.create_subscription(
+            Imu,
+            '/imu/data',  # Replace with your IMU topic
+            self.imu_callback,
+            1
+        )
         
         # Publisher for EKF input
         self.pose_pub = self.create_publisher(
@@ -68,6 +76,9 @@ class RobotStateEstimator(Node):
             transform.rotation.w
         ])
         return pos, rot
+    
+    def imu_callback(self, msg: Imu):
+        self.imu_orrientation = msg.orientation
 
     def create_transform(self, pos: np.ndarray, rot: Rotation) -> Transform:
         """Create Transform message from position and rotation"""
@@ -330,18 +341,15 @@ class RobotStateEstimator(Node):
         final_pose.pose.pose.position = Point(x=float(pos_sum[0]),
                                        y=float(pos_sum[1]),
                                        z=float(pos_sum[2]))
-        final_pose.pose.pose.orientation = Quaternion(x=float(final_quat[0]),
-                                               y=float(final_quat[1]),
-                                               z=float(final_quat[2]),
-                                               w=float(final_quat[3]))
+        final_pose.pose.pose.orientation = self.imu_orrientation
         
         final_pose.pose.covariance = [
-                0.0001, 0.0, 0.0, 0.0, 0.0, 0.0,  # X, Y, Z
-                0.0, 0.0001, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0001, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 1.0, 0.0, 0.0,  # Roll, Pitch, Yaw
-                0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 1.0
+                1e-9,0.0, 0.0, 0.0, 0.0, 0.0,  # X, Y, Z
+                0.0, 1e-9, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 1e-9, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 1e-5, 0.0, 0.0,  # Roll, Pitch, Yaw
+                0.0, 0.0, 0.0, 0.0, 1e-5, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 1e-5
                 ]        
         return final_pose
 
