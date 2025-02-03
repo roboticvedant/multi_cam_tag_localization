@@ -8,6 +8,7 @@ global_ekf:
     two_d_mode: false
     sensor_timeout: 0.05
     publish_tf: true
+    use_control: false
 
     # Local EKF's odometry (odom → base_link)
     odom0: /local_odom
@@ -30,10 +31,14 @@ global_ekf:
                    false, false, false]
     pose0_differential: false          # Absolute pose in map frame
     pose0_queue_size: 1
+    pose0_pose_rejection_threshold: 1.0
+    pose0_twist_rejection_threshold: 0.5
+    pose0_linear_acceleration_rejection_threshold: 0.2
+    pose0_nodelay: true
 
 local_ekf:
   ros__parameters:
-    frequency: 50.0
+    frequency: 40.0
     world_frame: odom                 # Output odom → base_link
     odom_frame: odom
     base_link_frame: base_link
@@ -41,6 +46,7 @@ local_ekf:
     two_d_mode: false
     sensor_timeout: 0.03
     publish_tf: true
+    use_control: false
 
     # IMU (base_link frame)
     imu0: /imu/data
@@ -51,9 +57,10 @@ local_ekf:
                   true, true, false]  # Disable linear acceleration
     imu0_differential: false
     imu0_remove_gravitational_acceleration: false
-    imu0_queue_size: 2
+    imu0_queue_size: 1
     imu0_pose_rejection_threshold: 0.5
     imu0_twist_rejection_threshold: 0.5
     imu0_linear_acceleration_rejection_threshold: 0.2 
+    imu0_nodelay: true
 
     
