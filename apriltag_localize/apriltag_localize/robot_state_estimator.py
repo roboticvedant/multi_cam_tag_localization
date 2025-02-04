@@ -36,6 +36,8 @@ class RobotStateEstimator(Node):
         
         # Store last processed timestamp to avoid duplicate processing
         self.last_processed_stamps = defaultdict(lambda: 0.0)
+
+        self.imu_orrientation = None
         
         # TF Subscriber
         self.tf_sub = self.create_subscription(
@@ -341,7 +343,13 @@ class RobotStateEstimator(Node):
         final_pose.pose.pose.position = Point(x=float(pos_sum[0]),
                                        y=float(pos_sum[1]),
                                        z=float(pos_sum[2]))
-        final_pose.pose.pose.orientation = self.imu_orrientation
+        if self.imu_orrientation is not None:
+            final_pose.pose.pose.orientation = self.imu_orrientation
+        else:            
+            final_pose.pose.pose.orientation = Quaternion(x=float(final_quat[0]),
+                                                     y=float(final_quat[1]),
+                                                     z=float(final_quat[2]),
+                                                     w=float(final_quat[3]))
         
         final_pose.pose.covariance = [
                 1e-9,0.0, 0.0, 0.0, 0.0, 0.0,  # X, Y, Z

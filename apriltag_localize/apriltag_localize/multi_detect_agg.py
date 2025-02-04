@@ -6,6 +6,7 @@ from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped, TransformStamped, Pose
 from tagpose_interfaces.msg import TagArray, TagPosition
 from std_msgs.msg import Header
+from builtin_interfaces.msg import Time
 import message_filters
 import numpy as np
 from transforms3d.quaternions import mat2quat, quat2mat, qmult, qinverse
@@ -53,76 +54,131 @@ class MultiDetectAggNode(Node):
             f'Sync slop: {self.sync_slop} seconds, Queue size: {self.queue_size}'
         )
 
-    def publish_tag_transform(self, tag_id: int, pose: Pose, camera_names: List[str]):
-        """Publish transform for a tag detection"""
-        # Create and broadcast transform
-        transform = TransformStamped()
-        transform.header.stamp = self.get_clock().now().to_msg()
-        transform.header.frame_id = 'map'
-        transform.child_frame_id = f'tag_{tag_id}'
+    def nanosec_to_time_msg(self, total_nanosec: int) -> Time:
+        """Convert total nanoseconds to ROS Time message"""
+        seconds = total_nanosec // 1_000_000_000
+        nanoseconds = total_nanosec % 1_000_000_000
+        time_msg = Time()
+        time_msg.sec = int(seconds)
+        time_msg.nanosec = int(nanoseconds)
+        return time_msg
 
-        # Set translation
+    def create_transform_stamped(self, tag_id: int, pose: Pose, frame_id: str, timestamp: Time, child_frame_suffix: str = '') -> TransformStamped:
+        """Create a TransformStamped message"""
+        transform = TransformStamped()
+        transform.header.stamp = timestamp  # Already a Time message
+        transform.header.frame_id = frame_id
+        transform.child_frame_id = f'tag_{tag_id}{child_frame_suffix}'
+
         transform.transform.translation.x = pose.position.x
         transform.transform.translation.y = pose.position.y
         transform.transform.translation.z = pose.position.z
-
-        # Set rotation
         transform.transform.rotation = pose.orientation
 
-        # Broadcast the transform
-        self.tf_broadcaster.sendTransform(transform)
+        return transform
 
-        # Log the detection
-        detection_type = "single" if len(camera_names) == 1 else "averaged"
-        self.get_logger().info(
-            f'Broadcasting {detection_type} pose for tag {tag_id} from camera(s) '
-            f'{", ".join(camera_names)} at position [{pose.position.x:.3f}, '
-            f'{pose.position.y:.3f}, {pose.position.z:.3f}]'
-        )
+    def publish_tag_transforms(self, tag_detections_by_camera: Dict[str, List[Tuple[int, Pose, float]]], 
+                             timestamps: Dict[str, Time]):
+        """Publish all transforms for each camera's detections together"""
+        transforms_to_publish = []
+
+        # First, handle single-camera detections
+        for camera, detections in tag_detections_by_camera.items():
+            camera_timestamp = timestamps[camera]
+            
+            # Create transforms for all tags detected by this camera
+            for tag_id, pose, _ in detections:
+                transform = self.create_transform_stamped(
+                    tag_id=tag_id,
+                    pose=pose,
+                    frame_id='map',
+                    timestamp=camera_timestamp,
+                    child_frame_suffix=f'_{camera}'  # Add camera suffix for single detections
+                )
+                transforms_to_publish.append(transform)
+
+        # Then, handle multi-camera detections
+        tags_with_multiple_detections = defaultdict(list)
+        for camera, detections in tag_detections_by_camera.items():
+            for tag_id, pose, decision_margin in detections:
+                tags_with_multiple_detections[tag_id].append((pose, decision_margin, camera))
+
+        for tag_id, detections in tags_with_multiple_detections.items():
+            if len(detections) > 1:
+                # Get all cameras that saw this tag
+                cameras_seeing_tag = [camera for _, _, camera in detections]
+                
+                # Calculate total nanoseconds for each timestamp and find the latest
+                total_nanoseconds = [
+                    timestamps[camera].sec * 1_000_000_000 + timestamps[camera].nanosec 
+                    for camera in cameras_seeing_tag
+                ]
+                latest_timestamp = self.nanosec_to_time_msg(max(total_nanoseconds))
+                
+                # Calculate weighted average pose
+                poses_with_weights = []
+                total_margin = sum([margin for _, margin, _ in detections])
+                for pose, margin, _ in detections:
+                    normalized_weight = margin / total_margin
+                    poses_with_weights.append((pose, normalized_weight))
+
+                averaged_pose = self.average_poses(poses_with_weights)
+                if averaged_pose is not None:
+                    # Create transform for the averaged pose
+                    transform = self.create_transform_stamped(
+                        tag_id=tag_id,
+                        pose=averaged_pose,
+                        frame_id='map',
+                        timestamp=latest_timestamp
+                    )
+                    transforms_to_publish.append(transform)
+
+        # Publish all transforms together
+        if transforms_to_publish:
+            self.tf_broadcaster.sendTransform(transforms_to_publish)
+            self.log_transforms(transforms_to_publish)
+
+    def log_transforms(self, transforms: List[TransformStamped]):
+        """Log information about published transforms"""
+        for transform in transforms:
+            timestamp_sec = transform.header.stamp.sec + transform.header.stamp.nanosec / 1e9
+            self.get_logger().info(
+                f'Published transform for {transform.child_frame_id} '
+                f'at timestamp {timestamp_sec:.3f}s '
+                f'position: [{transform.transform.translation.x:.3f}, '
+                f'{transform.transform.translation.y:.3f}, '
+                f'{transform.transform.translation.z:.3f}]'
+            )
 
     def sync_callback(self, *tag_arrays):
         """Handle synchronized tag detections from all cameras"""
         try:
-            # Dictionary to store all detections of each tag
-            # Structure: {tag_id: [(pose, decision_margin, camera_name)]}
-            tag_detections = defaultdict(list)
+            # Dictionary to store detections by camera
+            tag_detections_by_camera = {}
+            timestamps = {}
 
             # Process detections from each camera
             for camera_idx, tag_array in enumerate(tag_arrays):
                 camera_name = self.cameras[camera_idx]
-
+                
+                # Store the timestamp for this camera's detections
+                timestamps[camera_name] = tag_array.header.stamp
+                
+                # Store all detections from this camera
+                camera_detections = []
                 for tag_pos in tag_array.positions:
-                    tag_id = tag_pos.id
-                    tag_decision_margin = tag_pos.decision_margin
-                    # Store detection with pose, decision margin, and camera name
-                    tag_detections[tag_id].append((tag_pos.pose, tag_decision_margin, camera_name))
-
-            # Process each detected tag
-            for tag_id, detections in tag_detections.items():
-                num_detections = len(detections)
+                    camera_detections.append((
+                        tag_pos.id,
+                        tag_pos.pose,
+                        tag_pos.decision_margin
+                    ))
                 
-                if num_detections == 0:
-                    continue
-                
-                # If only one camera detected the tag, use that pose directly
-                if num_detections == 1:
-                    pose, _, camera_name = detections[0]
-                    self.publish_tag_transform(tag_id, pose, [camera_name])
-                    continue
-                
-                # Multiple cameras detected the tag, compute weighted average using decision margins
-                poses_with_weights = []
-                total_margin = sum([dm for _, dm, _ in detections])
+                if camera_detections:  # Only store if there were any detections
+                    tag_detections_by_camera[camera_name] = camera_detections
 
-                for pose, decision_margin, _ in detections:
-                    normalized_weight = decision_margin / total_margin  # Normalize decision margin
-                    poses_with_weights.append((pose, normalized_weight))
-
-                # Average poses using weights
-                averaged_pose = self.average_poses(poses_with_weights)
-                if averaged_pose is not None:
-                    camera_names = [camera for _, _, camera in detections]
-                    self.publish_tag_transform(tag_id, averaged_pose, camera_names)
+            # Publish all transforms together if there are any detections
+            if tag_detections_by_camera:
+                self.publish_tag_transforms(tag_detections_by_camera, timestamps)
 
         except Exception as e:
             self.get_logger().error(f'Error in sync callback: {str(e)}')
@@ -180,25 +236,11 @@ class MultiDetectAggNode(Node):
         return averaged_pose
 
     def average_quaternions(self, quaternions: np.ndarray, weights: np.ndarray) -> np.ndarray:
-        """Average quaternions using weighted averaging"""
-        # Normalize weights
-        weights = weights / np.sum(weights)
-
-        # Initialize accumulator
-        avg = np.zeros(4)
-
-        # Get reference quaternion
-        ref = quaternions[0]
-
-        # Ensure all quaternions are on the same hemisphere as the reference
-        for i in range(quaternions.shape[0]):
-            if np.dot(ref, quaternions[i]) < 0:
-                quaternions[i] = -quaternions[i]
-
-        # Weighted average
+        """Simple weighted average of quaternions with normalization"""
+        # Simple weighted average since quaternions should be very close
         avg = np.sum(quaternions * weights[:, np.newaxis], axis=0)
-
-        # Normalize
+        
+        # Normalize to unit quaternion
         return avg / np.linalg.norm(avg)
 
 def main(args=None):
