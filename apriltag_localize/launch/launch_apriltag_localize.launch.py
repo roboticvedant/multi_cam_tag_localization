@@ -18,6 +18,8 @@ def generate_launch_description():
     tag_detect_common_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'common_config.yaml')
     tag_detect_camera1_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'camera1_config.yaml')
     tag_detect_camera2_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'camera2_config.yaml')
+    tag_detect_camera3_config = os.path.join(apriltag_localize_share, 'config','tag_detect', 'camera3_config.yaml')
+
 
     
     return LaunchDescription([
@@ -29,10 +31,6 @@ def generate_launch_description():
                 "launch",
                 "launch_rviz.launch.py"]))
         ),
-
-      
-
-
         # My custom nodes from here on:
         Node(
             package='apriltag_localize',
@@ -48,13 +46,20 @@ def generate_launch_description():
             output='screen',
             parameters=[tag_detect_common_config, tag_detect_camera2_config]
         ), 
+        Node(
+            package='apriltag_localize',
+            executable='tag_detect',
+            name='detect_node_cam3',
+            output='screen',
+            parameters=[tag_detect_common_config, tag_detect_camera3_config]
+        ), 
 
          Node(
             package='apriltag_localize',
             executable='multi_detect_agg',
             name='agg_node',
             output='screen',
-            parameters=[{'cameras': ['camera_1', 'camera_2']}]
+            parameters=[{'cameras': ['camera_1', 'camera_2', 'camera_3']}]
         ), 
         
         
