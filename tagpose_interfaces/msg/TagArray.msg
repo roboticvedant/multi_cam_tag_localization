@@ -1,4 +1,3 @@
-# Array of tag positions
 std_msgs/Header header
+string cam_id
 TagPosition[] positions
-

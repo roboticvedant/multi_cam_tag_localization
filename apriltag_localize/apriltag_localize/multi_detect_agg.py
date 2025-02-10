@@ -10,7 +10,6 @@ from builtin_interfaces.msg import Time
 import message_filters
 import numpy as np
 from transforms3d.quaternions import mat2quat, quat2mat, qmult, qinverse
-import networkx as nx
 from typing import Dict, Optional, List, Tuple
 from collections import defaultdict
 
@@ -22,11 +21,13 @@ class MultiDetectAggNode(Node):
         self.declare_parameter('cameras', ['camera_1'])
         self.declare_parameter('sync_slop', 0.01)  # Time tolerance for synchronization in seconds
         self.declare_parameter('queue_size', 5)   # Queue size for synchronizer
+        self.declare_parameter('debug_cam', True)
 
         # Get parameters
         self.cameras = self.get_parameter('cameras').value
         self.sync_slop = self.get_parameter('sync_slop').value
         self.queue_size = self.get_parameter('queue_size').value
+        self.debug_cam = self.get_parameter('debug_cam').value
 
         # Initialize tf broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -78,53 +79,47 @@ class MultiDetectAggNode(Node):
         return transform
 
     def publish_tag_transforms(self, tag_detections_by_camera: Dict[str, List[Tuple[int, Pose, float]]], 
-                             timestamps: Dict[str, Time]):
+                            timestamps: Dict[str, Time]):
         """Publish all transforms for each camera's detections together"""
         transforms_to_publish = []
 
-        # First, handle single-camera detections
-        for camera, detections in tag_detections_by_camera.items():
-            camera_timestamp = timestamps[camera]
-            
-            # Create transforms for all tags detected by this camera
-            for tag_id, pose, _ in detections:
-                transform = self.create_transform_stamped(
-                    tag_id=tag_id,
-                    pose=pose,
-                    frame_id='map',
-                    timestamp=camera_timestamp,
-                    child_frame_suffix=f'_{camera}'  # Add camera suffix for single detections
-                )
-                transforms_to_publish.append(transform)
-
-        # Then, handle multi-camera detections
-        tags_with_multiple_detections = defaultdict(list)
+        # First collect all detections by tag_id
+        tags_with_detections = defaultdict(list)
         for camera, detections in tag_detections_by_camera.items():
             for tag_id, pose, decision_margin in detections:
-                tags_with_multiple_detections[tag_id].append((pose, decision_margin, camera))
+                tags_with_detections[tag_id].append((pose, decision_margin, camera))
+                
+                # If debug is enabled, always publish the camera-specific transform
+                if self.debug_cam:
+                    transform_debug = self.create_transform_stamped(
+                        tag_id=tag_id,
+                        pose=pose,
+                        frame_id='map',
+                        timestamp=timestamps[camera],
+                        child_frame_suffix=f'_{camera}'
+                    )
+                    transforms_to_publish.append(transform_debug)
 
-        for tag_id, detections in tags_with_multiple_detections.items():
+        # Now handle the main transforms (without camera suffix)
+        for tag_id, detections in tags_with_detections.items():
             if len(detections) > 1:
-                # Get all cameras that saw this tag
+                # Multiple cameras saw this tag → Compute averaged pose
                 cameras_seeing_tag = [camera for _, _, camera in detections]
                 
-                # Calculate total nanoseconds for each timestamp and find the latest
+                # Get latest timestamp
                 total_nanoseconds = [
                     timestamps[camera].sec * 1_000_000_000 + timestamps[camera].nanosec 
                     for camera in cameras_seeing_tag
                 ]
                 latest_timestamp = self.nanosec_to_time_msg(max(total_nanoseconds))
                 
-                # Calculate weighted average pose
-                poses_with_weights = []
+                # Compute weighted average pose
                 total_margin = sum([margin for _, margin, _ in detections])
-                for pose, margin, _ in detections:
-                    normalized_weight = margin / total_margin
-                    poses_with_weights.append((pose, normalized_weight))
+                poses_with_weights = [(pose, margin / total_margin) for pose, margin, _ in detections]
 
                 averaged_pose = self.average_poses(poses_with_weights)
                 if averaged_pose is not None:
-                    # Create transform for the averaged pose
+                    # Publish the averaged transform without camera suffix
                     transform = self.create_transform_stamped(
                         tag_id=tag_id,
                         pose=averaged_pose,
@@ -132,11 +127,24 @@ class MultiDetectAggNode(Node):
                         timestamp=latest_timestamp
                     )
                     transforms_to_publish.append(transform)
+            else:
+                # Single camera detection - publish without suffix
+                pose, margin, camera = detections[0]
+                transform = self.create_transform_stamped(
+                    tag_id=tag_id,
+                    pose=pose,
+                    frame_id='map',
+                    timestamp=timestamps[camera]
+                )
+                transforms_to_publish.append(transform)
 
         # Publish all transforms together
         if transforms_to_publish:
             self.tf_broadcaster.sendTransform(transforms_to_publish)
             self.log_transforms(transforms_to_publish)
+
+
+
 
     def log_transforms(self, transforms: List[TransformStamped]):
         """Log information about published transforms"""
@@ -169,7 +177,7 @@ class MultiDetectAggNode(Node):
                 for tag_pos in tag_array.positions:
                     camera_detections.append((
                         tag_pos.id,
-                        tag_pos.pose,
+                        tag_pos.pose.pose.pose,
                         tag_pos.decision_margin
                     ))
                 

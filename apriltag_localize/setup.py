@@ -22,12 +22,15 @@ setup(
         ('share/' + package_name + '/config/tag_detect', [
             'config/tag_detect/common_config.yaml',
             'config/tag_detect/camera1_config.yaml',
-            'config/tag_detect/camera2_config.yaml'
+            'config/tag_detect/camera2_config.yaml',
+            'config/tag_detect/camera3_config.yaml'
         ]),
         ('share/' + package_name + '/config/extrinsic_calib', [
             'config/extrinsic_calib/webCam.yaml',
             'config/extrinsic_calib/lenovoCam.yaml',
-            'config/extrinsic_calib/nexigoCam.yaml'
+            'config/extrinsic_calib/nexigoCam1.yaml',
+            'config/extrinsic_calib/nexigoCam2.yaml',
+            'config/extrinsic_calib/nexigoCam3.yaml'
         ]),
         # RViz configuration
         ('share/' + package_name + '/rviz', ['rviz/extrinsic.rviz']),

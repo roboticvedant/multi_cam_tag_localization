@@ -55,38 +55,33 @@ def generate_launch_description():
 
     webCam_config = os.path.join(config_dir, 'webCam.yaml')
     lenovoCam_config = os.path.join(config_dir, 'lenovoCam.yaml')
-    nexigo_config = os.path.join(config_dir, 'nexigoCam.yaml')
+    nexigo_config1 = os.path.join(config_dir, 'nexigoCam1.yaml')
+    nexigo_config2 = os.path.join(config_dir, 'nexigoCam2.yaml')
+    nexigo_config3 = os.path.join(config_dir, 'nexigoCam3.yaml')
 
     return LaunchDescription([
         Node(
             package='usb_cam',
             executable='usb_cam_node_exe',
-            name='nexigo_camera',
+            name='nexigo_camera1',
             namespace='camera_1',
-            parameters=[nexigo_config],
+            parameters=[nexigo_config1],
             output='screen'
         ),
         Node(
             package='usb_cam',
             executable='usb_cam_node_exe',
-            name='lenovo_camera',
+            name='nexigo_camera2',
             namespace='camera_2',
-            parameters=[lenovoCam_config],
+            parameters=[nexigo_config2],
             output='screen'
         ),
-        Node(
-            package='apriltag_localize',
-            executable='image_undistort',
-            name='undistort_node_cam1',
-            namespace='camera_1',
-            output='screen',
-        ),
-        Node(
-            package='apriltag_localize',
-            executable='image_undistort',
-            name='undistort_node_cam2',
-            namespace='camera_2',
-            output='screen',
-
+         Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='nexigo_camera3',
+            namespace='camera_3',
+            parameters=[nexigo_config3],
+            output='screen'
         ),
     ])

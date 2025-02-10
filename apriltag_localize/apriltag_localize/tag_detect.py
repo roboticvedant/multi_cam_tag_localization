@@ -91,24 +91,20 @@ class AprilTagDetectorNode(Node):
         img = cv2.line(img, corner, tuple(imgpts[2].ravel().astype(int)), (0,0,255), 3)  # Z axis - Blue
         return img
 
-    def _create_pose_stamped(self, position, orientation):
+    def _create_pose_msg(self, position, orientation):
         """Create a PoseStamped message with explicit type conversion"""
-        pose_stamped = PoseStamped()
-        # pose_stamped.header.stamp = self.get_clock().now().to_msg()
-        # pose_stamped.header.frame_id = self.tf2_frame
-        
-        # Ensure position values are float
-        pose_stamped.pose.position.x = float(position[0])
-        pose_stamped.pose.position.y = float(position[1])
-        pose_stamped.pose.position.z = float(position[2])
+        pose = Pose()
+        pose.position.x = float(position[0])
+        pose.position.y = float(position[1])
+        pose.position.z = float(position[2])
         
         # Ensure orientation values are float
-        pose_stamped.pose.orientation.w = float(orientation[0])
-        pose_stamped.pose.orientation.x = float(orientation[1])
-        pose_stamped.pose.orientation.y = float(orientation[2])
-        pose_stamped.pose.orientation.z = float(orientation[3])
+        pose.orientation.w = float(orientation[0])
+        pose.orientation.x = float(orientation[1])
+        pose.orientation.y = float(orientation[2])
+        pose.orientation.z = float(orientation[3])
         
-        return pose_stamped
+        return pose
 
     def _camera_info_callback(self, msg):
         """Callback for camera intrinsic calibration info"""
@@ -150,20 +146,19 @@ class AprilTagDetectorNode(Node):
             ]
             
             # Create pose stamped message
-            pose_stamped = self._create_pose_stamped(position, orientation)
+            pose = self._create_pose_msg(position, orientation)
             
             # Transform to map frame
-            transformed_pose = self._transform_pose_to_map(pose_stamped)
+            transformed_pose = self._transform_pose_to_map(pose)
 
             if transformed_pose is None:
                 return None
                 
             # Create and return tag position message
             tag_position = TagPosition()
-            tag_position.header = pose_stamped.header
+            tag_position.pose.pose.pose = transformed_pose
             tag_position.family = self.tag_family
             tag_position.id = int(detection.tag_id)
-            tag_position.pose = transformed_pose
             tag_position.decision_margin = detection.decision_margin
             tag_position.pose_error = detection.pose_err
 
@@ -173,7 +168,7 @@ class AprilTagDetectorNode(Node):
             self.get_logger().error(f'Error processing tag detection: {str(e)}')
             return None
 
-    def _transform_pose_to_map(self, pose_stamped):
+    def _transform_pose_to_map(self, pose_msg):
         """Transform pose from camera frame to map frame"""
         try:
             transform = self.tf_buffer.lookup_transform(
@@ -182,7 +177,7 @@ class AprilTagDetectorNode(Node):
                 rclpy.time.Time(),
                 rclpy.duration.Duration(seconds=1.0)
             )
-            return tf2_geometry_msgs.do_transform_pose(pose_stamped.pose, transform)
+            return tf2_geometry_msgs.do_transform_pose(pose_msg, transform)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             self.get_logger().error(f'Failed to transform pose: {str(e)}')
             self.get_logger().info(f'Available frames: {self.tf_buffer.all_frames_as_string()}')
@@ -217,7 +212,7 @@ class AprilTagDetectorNode(Node):
             tag_array_msg = TagArray()
             tag_array_msg.header = Header()
             tag_array_msg.header.stamp = detectiontime
-            tag_array_msg.header.frame_id = 'map'
+            tag_array_msg.cam_id = self.camera_name
             if tag_array_msg is None:
                 self.get_logger().error('Failed to create TagArray message')
                 return
@@ -237,7 +232,9 @@ class AprilTagDetectorNode(Node):
                 tag_position = self._process_tag_detection(detection)
 
                 if tag_position is not None:
-                    tag_position.header = tag_array_msg.header
+                    tag_position.pose.header.stamp = detectiontime
+                    # tag_position.header.frame_id = self.tf2_frame # change this when we make an ekf node to fuse cam with covariance
+                    tag_position.pose.header.frame_id = "map" #since converting pose in map frame
                     tag_array_msg.positions.append(tag_position)
 
                 # Draw detection on debug image
