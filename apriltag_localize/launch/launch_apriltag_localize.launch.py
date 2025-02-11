@@ -25,12 +25,12 @@ def generate_launch_description():
     return LaunchDescription([
 
         # Laucnh the rviz visualizer with the TF of the map and the cameras
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(PathJoinSubstitution([
-                FindPackageShare("apriltag_localize"),
-                "launch",
-                "launch_rviz.launch.py"]))
-        ),
+        # IncludeLaunchDescription(
+        #     PythonLaunchDescriptionSource(PathJoinSubstitution([
+        #         FindPackageShare("apriltag_localize"),
+        #         "launch",
+        #         "launch_rviz.launch.py"]))
+        # ),
         # My custom nodes from here on:
         Node(
             package='apriltag_localize',

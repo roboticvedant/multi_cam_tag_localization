@@ -19,9 +19,9 @@ class MultiDetectAggNode(Node):
 
         # Parameters
         self.declare_parameter('cameras', ['camera_1'])
-        self.declare_parameter('sync_slop', 0.01)  # Time tolerance for synchronization in seconds
-        self.declare_parameter('queue_size', 5)   # Queue size for synchronizer
-        self.declare_parameter('debug_cam', True)
+        self.declare_parameter('sync_slop', 0.05)  # Time tolerance for synchronization in seconds
+        self.declare_parameter('queue_size', 10)   # Queue size for synchronizer
+        self.declare_parameter('debug_cam', False)
 
         # Get parameters
         self.cameras = self.get_parameter('cameras').value
