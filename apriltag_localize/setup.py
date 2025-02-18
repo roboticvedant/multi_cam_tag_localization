@@ -42,6 +42,7 @@ setup(
             'launch/launch_apriltag_localize.launch.py',
             'launch/launch_robot_pose.launch.py'
         ]),
+        # filter is in my package pkg/pkg/Filter/fir_filter.py
     ],
     install_requires=['setuptools'],
     zip_safe=True,

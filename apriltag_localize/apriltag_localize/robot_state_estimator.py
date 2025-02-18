@@ -11,6 +11,7 @@ from scipy.spatial.transform import Rotation
 import yaml
 from collections import defaultdict
 from sensor_msgs.msg import Imu, MagneticField
+from .Filter import TagPoseFilter
 
 class RobotStateEstimator(Node):
     def __init__(self):
@@ -63,6 +64,19 @@ class RobotStateEstimator(Node):
         
         self.latest_detections = defaultdict(list)
         self.get_logger().info('Robot state estimator node started')
+
+        self.declare_parameter('position_alpha', 0.3)
+        self.declare_parameter('orientation_alpha', 0.3)
+        self.declare_parameter('position_median_window', 15)
+        self.declare_parameter('orientation_median_window', 15)
+
+        # Initialize tag pose filter
+        self.tag_filter = TagPoseFilter(
+            alpha_pos=self.get_parameter('position_alpha').value,
+            alpha_orient=self.get_parameter('orientation_alpha').value,
+            pos_median_window=self.get_parameter('position_median_window').value,
+            orient_median_window=self.get_parameter('orientation_median_window').value
+        )
 
     def transform_to_pose(self, transform: Transform) -> tuple:
         """Convert Transform to position and rotation"""
@@ -330,34 +344,65 @@ class RobotStateEstimator(Node):
                          pose.pose.pose.orientation.w])
             weights.append(norm_weight)
         
-        # Average rotation using scipy and apply additional -90 degree Z rotation
-        avg_rot = Rotation.from_quat(quats).mean(weights=weights)
-        rot_z = Rotation.from_euler('z', -np.pi/2)
-        final_rot = avg_rot * rot_z
-        final_quat = final_rot.as_quat()
+        #Use IMU orientation if available, and discard the orientation from the tags
+        if self.imu_orrientation is not None:  # Proper None check
+            final_quat = np.array([
+                self.imu_orrientation.x,
+                self.imu_orrientation.y,
+                self.imu_orrientation.z,
+                self.imu_orrientation.w
+            ])
+        else:
+            avg_rot = Rotation.from_quat(quats).mean(weights=weights)
+            rot_z = Rotation.from_euler('z', -np.pi/2)
+            final_rot = avg_rot * rot_z
+            final_quat = final_rot.as_quat()
+
+        #filter everything with low pass filter once again,
+        #to remove the noise from the predictions
+
+        pose_data = {
+            'position': {
+                'x': float(pos_sum[0]),
+                'y': float(pos_sum[1]),
+                'z': float(pos_sum[2])
+            },
+            'orientation': {
+                'x': float(final_quat[0]),
+                'y': float(final_quat[1]),
+                'z': float(final_quat[2]),
+                'w': float(final_quat[3])
+            }
+        }
+        # Get or create filter for base_link and apply filtering
+        filtered_pose = self.tag_filter.filter_pose('base_link', pose_data)
         
         # Create final pose
         final_pose = PoseWithCovarianceStamped()
         final_pose.header.frame_id = 'map'
         final_pose.header.stamp = self.get_clock().now().to_msg()
-        final_pose.pose.pose.position = Point(x=float(pos_sum[0]),
-                                       y=float(pos_sum[1]),
-                                       z=float(pos_sum[2]))
-        if self.imu_orrientation is not None:
-            final_pose.pose.pose.orientation = self.imu_orrientation
-        else:            
-            final_pose.pose.pose.orientation = Quaternion(x=float(final_quat[0]),
-                                                     y=float(final_quat[1]),
-                                                     z=float(final_quat[2]),
-                                                     w=float(final_quat[3]))
-        
+        # Set position from filtered pose
+        final_pose.pose.pose.position = Point(
+            x=float(filtered_pose['position']['x']),
+            y=float(filtered_pose['position']['y']),
+            z=float(filtered_pose['position']['z'])
+        )
+
+        # Set orientation from filtered pose
+        final_pose.pose.pose.orientation = Quaternion(
+            x=float(filtered_pose['orientation']['x']),
+            y=float(filtered_pose['orientation']['y']),
+            z=float(filtered_pose['orientation']['z']),
+            w=float(filtered_pose['orientation']['w'])
+        )
+                                
         final_pose.pose.covariance = [
                 1e-9,0.0, 0.0, 0.0, 0.0, 0.0,  # X, Y, Z
                 0.0, 1e-9, 0.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, 1e-9, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 1e-5, 0.0, 0.0,  # Roll, Pitch, Yaw
-                0.0, 0.0, 0.0, 0.0, 1e-5, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 1e-5
+                0.0, 0.0, 0.0, 0.1, 0.0, 0.0,  # Roll, Pitch, Yaw
+                0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.1
                 ]        
         return final_pose
 

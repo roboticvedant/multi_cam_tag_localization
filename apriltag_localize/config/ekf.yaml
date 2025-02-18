@@ -1,29 +1,29 @@
 global_ekf:
   ros__parameters:
-    frequency: 30.0                   # Lower frequency for global corrections
+    frequency: 40.0                   # Lower frequency for global corrections
     world_frame: map                  # Output map → odom
     odom_frame: odom
     base_link_frame: base_link
     map_frame: map
     two_d_mode: false
-    sensor_timeout: 0.02
+    sensor_timeout: 0.1
     publish_tf: true
     use_control: false
     use_sim_time: false
-    predict_to_current_time: true
+    # predict_to_current_time: true
     debug: true
     debug_out_file: /tmp/ekf_global_debug.txt
 
     # # Local EKF's odometry (odom --> base_link)
     odom0: /local_odom
-    odom0_config: [false, false, false,   # Enable position (X,Y,Z)
+    odom0_config: [true, true, true,   # Enable position (X,Y,Z)
                    true, true, true,   # Enable orientation (roll, pitch, yaw)
                    true, true, true,   # Enable linear velocity
-                   true, true, true,   # Enable angular velocity
-                   true, true, false]
+                   false, false, false,   # Enable angular velocity
+                   false, false, false]
     odom0_differential: true          # Treat as relative motion between updates
     odom0_queue_size: 1
-    odom0_nodelay: true
+    # odom0_nodelay: true
 
     # Camera Pose (map frame)
     pose0: /robot/pose
@@ -34,26 +34,26 @@ global_ekf:
                    false, false, false ]
     pose0_differential: false          # Absolute pose in map frame
     pose0_queue_size: 1
-    pose0_nodelay: true
-    process_noise_covariance: [ 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.00, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    # pose0_nodelay: true
+    # process_noise_covariance: [ 0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.00, 0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.002, 0.0, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.002, 0.0, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.002, 0.0, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9, 0.0,
+    #                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9]
                                 
-    inital_estimate_covariance: [ 100, 100, 100, 9, 9, 9, 2, 2, 2, 4, 4, 4, 2, 2, 2]
+    inital_estimate_covariance: [ 1000, 1000, 1000, 90, 90, 90, 20, 20, 20, 40, 40, 40, 20, 20, 20]
 
-    initial_state: [0.0, 0.0, 0.0,
+    initial_state: [0.635, -0.300, 0.650,
                     0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,
@@ -62,51 +62,49 @@ global_ekf:
 
 local_ekf:
   ros__parameters:
-    frequency: 50.0
+    frequency: 45.0
     world_frame: odom                 # Output odom --> base_link
     odom_frame: odom
     base_link_frame: base_link
     map_frame: map
     two_d_mode: false
-    sensor_timeout: 0.02
+    sensor_timeout: 0.2
     publish_tf: true
     use_control: false
     debug: true
     debug_out_file: /tmp/ekf_debug.txt
     use_sim_time: false
-    predict_to_current_time: true
+    smooth_lagged_data: true
+    # predict_to_current_time: true
+
+     # Camera Pose (map frame)
+    pose0: /robot/pose
+    pose0_config: [true, true, true,   # Enable position (X,Y,Z)
+                   true, true, true,   # Disable orientation (high covariance)
+                   false, false, false, 
+                   false, false, false,
+                   false, false, false ]
+    pose0_differential: false          # Absolute pose in map frame
+    pose0_queue_size: 1
 
     # IMU (base_link frame)
     imu0: /imu/data
     imu0_config: [false, false, false,  # Disable position
                   true,  true,  true,   # Enable orientation (roll, pitch, yaw)
-                  true, true, true,  # Disable linear velocity
+                  false, false, false,  # Disable linear velocity
                   true,  true,  true,   # Enable angular velocity
                   true, true, true]  
     imu0_differential: false
     imu0_remove_gravitational_acceleration: false # BNO055 already does that internally.
-    imu0_queue_size: 3
-    imu0_nodelay: true
+    imu0_queue_size: 1
+    # imu0_nodelay: true
     imu0_differential: true
-    process_noise_covariance: [ 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.00, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0,
-                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
-                                
-    inital_estimate_covariance: [ 100, 100, 100, 9, 9, 9, 2, 2, 2, 4, 4, 4, 2, 2, 2]
 
-    initial_state: [0.0, 0.0, 0.0,
+
+                                
+    inital_estimate_covariance: [ 1000, 1000, 1000, 90, 90, 90, 20, 20, 20, 40, 40, 40, 20, 20, 20]
+
+    initial_state: [0.635, -0.300, 0.650,
                     0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,
                     0.0, 0.0, 0.0,

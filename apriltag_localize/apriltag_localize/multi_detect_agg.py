@@ -19,7 +19,7 @@ class MultiDetectAggNode(Node):
 
         # Parameters
         self.declare_parameter('cameras', ['camera_1'])
-        self.declare_parameter('sync_slop', 0.05)  # Time tolerance for synchronization in seconds
+        self.declare_parameter('sync_slop', 0.5)  # Time tolerance for synchronization in seconds
         self.declare_parameter('queue_size', 10)   # Queue size for synchronizer
         self.declare_parameter('debug_cam', False)
 
@@ -150,7 +150,7 @@ class MultiDetectAggNode(Node):
         """Log information about published transforms"""
         for transform in transforms:
             timestamp_sec = transform.header.stamp.sec + transform.header.stamp.nanosec / 1e9
-            self.get_logger().info(
+            self.get_logger().debug(
                 f'Published transform for {transform.child_frame_id} '
                 f'at timestamp {timestamp_sec:.3f}s '
                 f'position: [{transform.transform.translation.x:.3f}, '

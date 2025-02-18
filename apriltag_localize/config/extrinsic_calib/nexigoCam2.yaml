@@ -1,6 +1,6 @@
 /**:
     ros__parameters:
-      video_device: "/dev/video4" # "ffplay /dev/video12" to test
+      video_device: "/dev/video6" # "ffplay /dev/video12" to test
       framerate: 30.0
       io_method: "mmap"
       frame_id: "cam2_frame"

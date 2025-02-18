@@ -13,6 +13,8 @@ from pupil_apriltags import Detector
 import tf2_ros
 import tf2_geometry_msgs
 from scipy.spatial.transform import Rotation
+# get the fir filter
+from .Filter import TagFilter, TagPoseFilter
 
 class AprilTagDetectorNode(Node):
     def __init__(self):
@@ -29,7 +31,7 @@ class AprilTagDetectorNode(Node):
         self.declare_parameter('camera_name', 'camera_1')
         self.declare_parameter('tag_size', 0.100)
         self.declare_parameter('tag_family', 'tag25h9')
-        self.declare_parameter('get_debug_image', True)
+        self.declare_parameter('get_debug_image', False)
         self.declare_parameter('tf2_frame', 'cam1')
         self.declare_parameter('expected_tags', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
 
@@ -83,6 +85,19 @@ class AprilTagDetectorNode(Node):
 
         self.get_logger().info(f'AprilTag detector initialized for {self.camera_name}')
 
+        self.declare_parameter('position_alpha', 0.4)
+        self.declare_parameter('orientation_alpha', 0.5)
+        self.declare_parameter('position_median_window', 30)
+        self.declare_parameter('orientation_median_window', 30)
+
+        # Initialize tag pose filter
+        self.tag_filter = TagPoseFilter(
+            alpha_pos=self.get_parameter('position_alpha').value,
+            alpha_orient=self.get_parameter('orientation_alpha').value,
+            pos_median_window=self.get_parameter('position_median_window').value,
+            orient_median_window=self.get_parameter('orientation_median_window').value
+        )
+
     def _draw_axis(self, img, corners, imgpts):
         """Draw 3D coordinate axis on tag"""
         corner = tuple(corners[0].astype(int))
@@ -115,38 +130,47 @@ class AprilTagDetectorNode(Node):
             self.get_logger().info("Camera calibration loaded from camera_info topic")
             self.destroy_subscription(self._camera_info_sub)
 
-    def _process_tag_detection(self, detection):
+    def _process_tag_detection(self, detection, timestamp):
         """Process a single tag detection"""
         try:
-            # Convert rotation matrix to quaternion using scipy
             R = np.array(detection.pose_R, dtype=np.float64).reshape((3, 3))
-            
             # Create 180-degree rotation around X axis
             R_flip = np.array([
                 [1,  0,  0],
                 [0, -1,  0],
                 [0,  0, -1]
             ])
-            
             # Apply the flip to the detected rotation
-            R_corrected = R @ R_flip
-            
-            # Convert corrected rotation to quaternion
-            rotation = Rotation.from_matrix(R_corrected)
+
+            R_corrected = R @ R_flip 
+            rotation = Rotation.from_matrix(R_corrected)                   
             quat = rotation.as_quat()  # Returns in xyzw format
-            
-            # Convert to ROS coordinate system (wxyz)
-            orientation = [float(quat[3]), float(quat[0]), float(quat[1]), float(quat[2])]
-            
-            # Get position and ensure it's float
-            position = [
-                float(detection.pose_t[0]),
-                float(detection.pose_t[1]),
-                float(detection.pose_t[2])
-            ]
-            
-            # Create pose stamped message
-            pose = self._create_pose_msg(position, orientation)
+            pose_data = {
+                'position': {
+                    'x': float(detection.pose_t[0]),
+                    'y': float(detection.pose_t[1]),
+                    'z': float(detection.pose_t[2])
+                },
+                'orientation': {
+                    'x': float(quat[0]),
+                    'y': float(quat[1]),
+                    'z': float(quat[2]),
+                    'w': float(quat[3])
+                }
+            }
+
+            filtered_pose = self.tag_filter.filter_pose(detection.tag_id, pose_data)
+
+            # Create pose message from filtered data
+            pose = self._create_pose_msg(
+                [filtered_pose['position']['x'],
+                 filtered_pose['position']['y'],
+                 filtered_pose['position']['z']],
+                [filtered_pose['orientation']['w'],  # Convert to ROS quaternion order (w,x,y,z)
+                 filtered_pose['orientation']['x'],
+                 filtered_pose['orientation']['y'],
+                 filtered_pose['orientation']['z']]
+            )
             
             # Transform to map frame
             transformed_pose = self._transform_pose_to_map(pose)
@@ -229,7 +253,8 @@ class AprilTagDetectorNode(Node):
                 if detection.tag_id not in self.expected_tags:
                     continue
 
-                tag_position = self._process_tag_detection(detection)
+                timestamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+                tag_position = self._process_tag_detection(detection, timestamp)
 
                 if tag_position is not None:
                     tag_position.pose.header.stamp = detectiontime

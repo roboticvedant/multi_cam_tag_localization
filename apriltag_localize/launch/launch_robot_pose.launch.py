@@ -17,6 +17,13 @@ def generate_launch_description():
             name='robot_state_estimator',
             output='screen'
         ),
+
+        Node(
+            package='apriltag_localize',
+            executable='kalman_filter',
+            name='filter_node',
+            output='screen'
+        ),
         
         # # Local EKF - provides odom->base_link transform
         # Node(
@@ -29,37 +36,37 @@ def generate_launch_description():
         # ),
         
         # Global EKF (map → odom)
-        Node(
-            package='robot_localization',
-            executable='ekf_node',
-            name='global_ekf',
-            output='screen',
-            parameters=[ekf_config],
-            remappings=[
-                ('odometry/filtered', '/global_odom'),
-                ('/set_pose', '/global_ekf/set_pose')
-            ]
-        ),
+        # Node(
+        #     package='robot_localization',
+        #     executable='ekf_node',
+        #     name='global_ekf',
+        #     output='screen',
+        #     parameters=[ekf_config],
+        #     remappings=[
+        #         ('odometry/filtered', '/global_odom'),
+        #         ('/set_pose', '/global_ekf/set_pose')
+        #     ]
+        # ),
         
         # Local EKF (odom → base_link)
-        Node(
-            package='robot_localization',
-            executable='ekf_node',
-            name='local_ekf',
-            output='screen',
-            parameters=[ekf_config],
-            remappings=[
-                ('odometry/filtered', '/local_odom'),
-                ('/set_pose', '/local_ekf/set_pose'),
-                ('/diagnostics', '/local_ekf/diagnostics')
-            ],
-        ),
+        # Node(
+        #     package='robot_localization',
+        #     executable='ekf_node',
+        #     name='local_ekf',
+        #     output='screen',
+        #     parameters=[ekf_config],
+        #     remappings=[
+        #         ('odometry/filtered', '/local_odom'),
+        #         ('/set_pose', '/local_ekf/set_pose'),
+        #         ('/diagnostics', '/local_ekf/diagnostics')
+        #     ],
+        # ),
         
-        # Initial Pose Setter
-        Node(
-            package='apriltag_localize',
-            executable='initial_pose_setter',
-            name='initial_pose_setter',
-            output='screen'
-        ),
+        # # Initial Pose Setter
+        # Node(
+        #     package='apriltag_localize',
+        #     executable='initial_pose_setter',
+        #     name='initial_pose_setter',
+        #     output='screen'
+        # ),
     ])
